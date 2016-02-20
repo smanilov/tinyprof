@@ -37,11 +37,14 @@ public:
 
   virtual void run(const MatchFinder::MatchResult &Result) {
     stringstream ss;
+    const unsigned n_loops = 3;
     ss << "total = rdtsc() - start;\n  "
           "cerr << \"Total runtime: \" << total << '\\n';\n  ";
-    ss << "cerr << \"Time for loop 0: \" << loop_total[0] << \" = \" << (double)loop_total[0] / total * 100 << '%' << '\\n';\n  ";
-    ss << "cerr << \"Time for loop 1: \" << loop_total[1] << \" = \" << (double)loop_total[1] / total * 100 << '%'<< '\\n';\n  ";
-    ss << "cerr << \"Time for loop 2: \" << loop_total[2] << \" = \" << (double)loop_total[2] / total * 100 << '%'<< '\\n';\n  ";
+    for (unsigned i = 0; i < n_loops; ++i) {
+      ss << "cerr << \"Time for loop " << i << ": \" << loop_total[" << i
+         << "] << \" = \" << (double)loop_total[" << i
+         << "] / total * 100 << '%' << '\\n';\n  ";
+    }
     const ReturnStmt *ret = Result.Nodes.getNodeAs<ReturnStmt>("return");
     auto insertBefore = ret->getLocStart();
     Replacement Rep(*(Result.SourceManager), insertBefore, 0, ss.str());
@@ -112,13 +115,15 @@ public:
     stringstream ss;
     ss << "\n  loop_total[" << n_loops << "] += rdtsc() - loop_start["
        << n_loops << "];";
-    Replacement Rep(*(Result.SourceManager), insertAfter.getLocWithOffset(1), 0, ss.str());
+    Replacement Rep(*(Result.SourceManager), insertAfter.getLocWithOffset(1), 0,
+                    ss.str());
     Replace->insert(Rep);
   }
 
   virtual void run(const MatchFinder::MatchResult &Result) {
     const ForStmt *forStmt = Result.Nodes.getNodeAs<clang::ForStmt>("for");
-    const WhileStmt *whileStmt = Result.Nodes.getNodeAs<clang::WhileStmt>("while");
+    const WhileStmt *whileStmt =
+        Result.Nodes.getNodeAs<clang::WhileStmt>("while");
     if (forStmt) {
       insertStartLoopProf(forStmt, Result);
       insertEndLoopProf(forStmt, Result);
@@ -145,7 +150,8 @@ int main(int argc, const char *argv[]) {
   MatchFinder Finder;
   Finder.addMatcher(functionDecl(hasName("main")).bind("main"),
                     &ProfHeaderAndStartInserter);
-  Finder.addMatcher(returnStmt(hasAncestor(functionDecl(hasName("main")))).bind("return"),
+  Finder.addMatcher(
+      returnStmt(hasAncestor(functionDecl(hasName("main")))).bind("return"),
       &ProfEndInserter);
   Finder.addMatcher(
       forStmt(hasAncestor(functionDecl(hasName("main")))).bind("for"),
