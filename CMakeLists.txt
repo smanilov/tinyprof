@@ -15,6 +15,9 @@ target_link_libraries(tinyprof
   )
 
 target_compile_features(tinyprof PRIVATE cxx_range_for)
-# clang++ -fno-rtti -std=c++11 -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS main.cpp -lclangBasic -lclangAST -lclangTooling -lLLVMSupport -lclangASTMatchers -lclangFrontend -lclangToolingCore
 
+add_definitions(-D__STDC_LIMIT_MACROS)
+add_definitions(-D__STDC_CONSTANT_MACROS)
+
+set(CMAKE_CXX_FLAGS "-fno-rtti")
 set(CMAKE_CXX_FLAGS "-fno-rtti")
